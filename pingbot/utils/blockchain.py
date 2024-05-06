@@ -2,8 +2,10 @@ import asyncio
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey  # type: ignore
 
-from .enums import ProgramIdType
-from .metadata import unpack_metadata_account
+from pingbot.utils.enums import ProgramIdType
+from pingbot.utils.metadata import unpack_metadata_account
+
+__all__ = ["PingSolanaClient", ]
 
 class PingSolanaClient:
     BASE_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com"
@@ -22,7 +24,7 @@ class PingSolanaClient:
                 - `account` (str): account to fetch information
         """
         account_instance = await self.client.get_account_info_json_parsed(
-            Pubkey.from_string(account)
+            Pubkey.from_string(str(account))
         )
         return account_instance.value.data
 
@@ -55,12 +57,8 @@ class PingSolanaClient:
         ##  Required:
                 - `mint` (str): token mint which you want to retrieve the meta-data account info.
         """
-        program_address = await self.get_program_address(mint)
+        program_address = await self.get_program_address(str(mint))
         account_info_instance = await self.get_account_info(program_address)
         token_info = await unpack_metadata_account(account_info_instance)
-        print(token_info)
+        return token_info['name'], token_info['symbol']
         
-
-a = PingSolanaClient()
-
-asyncio.run(a.get_token_info("92TUnL8sEsSoQfp96cc9vBKV5rdbMn2wZWeXTGdr62zP"))
