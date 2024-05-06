@@ -54,4 +54,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Blockchain
-RPC_CLIENT = env.str("RPC_CLIENT")
+PRIVATE_RPC_CLIENT = env.str("RPC_CLIENT")
