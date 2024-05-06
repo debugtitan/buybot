@@ -47,24 +47,24 @@ python -m pingbot
 
 
 ## Todo Tasks
-[x] Setup Application Codebase
-[x] Integration of django ORM
-[x] Implementation of Python Telegram Bot Wrapper
-[x] Building PingBot Solana Client
-[x] Fetch Token Info
-[ ] Fetch Token Liquidty Pool Address
-[ ] Fetch Token Liquidity Pool Events
-[ ] Create Admin Panel
+- [x] Setup Application Codebase
+- [x] Integration of django ORM
+- [x] Implementation of Python Telegram Bot Wrapper
+- [x] Building PingBot Solana Client
+- [x] Fetch Token Info
+- [ ] Fetch Token Liquidty Pool Address
+- [ ] Fetch Token Liquidity Pool Events
+- [ ] Create Admin Panel
     - [ ] min buy alert
     - [ ] min sell alert
     - [ ] steps emoji setup
     - [ ] gif for buy and sell notification
     - [ ] pause alerts
     - [ ] delete token from database
-[ ] Implement Decorator
+- [ ] Implement Decorator
         - only bot super admin can make changes
-[ ] Implement Language Translations
-[ ] Implement Ad's (not planning)
+- [ ] Implement Language Translations
+- [ ] Implement Ad's (not planning)
 
 
 ## feel free to open `pull request ` for new `contribution`
