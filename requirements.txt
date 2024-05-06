@@ -4,3 +4,4 @@ django
 django-solo
 django-environ
 python-telegram-bot
+base58
