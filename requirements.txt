@@ -1,0 +1,6 @@
+solana
+solders
+django
+django-solo
+django-environ
+python-telegram-bot
