@@ -62,7 +62,7 @@ class PingSolanaClient:
         token_info = await unpack_metadata_account(account_info_instance)
         return token_info['name'], token_info['symbol']
     
-    async def get_liquidity_pool_address(self, mint):
+    async def get_mint_liquidity_pool_address(self, mint):
         """
         `get_liquidity_pool_address` retrieves the liquidity pool address for a given mint.
 
