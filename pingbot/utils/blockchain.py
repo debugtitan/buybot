@@ -19,7 +19,6 @@ class PingSolanaClient:
         self.client = (
             AsyncClient(endpoint) if endpoint else AsyncClient(self.BASE_RPC_ENDPOINT)
         )
-        # self.private_client =  AsyncClient("")
 
     async def get_account_info(self, account):
         """
