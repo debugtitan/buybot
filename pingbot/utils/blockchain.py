@@ -1,17 +1,24 @@
-import asyncio
+from typing import List, Union
 from solana.rpc.async_api import AsyncClient
+from solana.rpc.types import MemcmpOpts
 from solders.pubkey import Pubkey  # type: ignore
-
 from pingbot.utils.enums import ProgramIdType
-from pingbot.utils.metadata import unpack_metadata_account
+from pingbot.utils.metadata import (
+    unpack_metadata_account,
+)
 
-__all__ = ["PingSolanaClient", ]
+__all__ = [
+    "PingSolanaClient",
+]
+
 
 class PingSolanaClient:
     BASE_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com"
 
-    def __init__(self) -> None:
-        self.client = AsyncClient(self.BASE_RPC_ENDPOINT)
+    def __init__(self, endpoint=None) -> None:
+        self.client = (
+            AsyncClient(endpoint) if endpoint else AsyncClient(self.BASE_RPC_ENDPOINT)
+        )
         # self.private_client =  AsyncClient("")
 
     async def get_account_info(self, account):
@@ -49,26 +56,35 @@ class PingSolanaClient:
             Pubkey.from_string(str(program_id)),
         )[0]
 
+    async def fetch_mint_pool_amm_id(self, mint):
+        """
+        `get_liquidity_pool_address` retrieves the liquidity pool address for a given mint.
+
+        ##  Parameters
+
+            `mint`: (str): public key representing a token mint address
+        """
+        memcmp_opts_1 = MemcmpOpts(offset=400, bytes=str(mint))
+        memcmp_opts_2 = MemcmpOpts(
+            offset=432, bytes=str(ProgramIdType.WRAPPED_SOL.value)
+        )
+        filters: List[Union[int, MemcmpOpts]] = [752, memcmp_opts_1, memcmp_opts_2]
+        resp = await self.client.get_program_accounts(
+            Pubkey.from_string(str(ProgramIdType.RAYDIUM_POOL.value)),
+            encoding="base64",
+            filters=filters,
+        )
+        return resp.value[0].pubkey
+
     async def get_token_info(self, mint):
         """
         retrieves token information by unpacking metadata from an account
         associated with a given mint.
-        
+
         ##  Required:
                 - `mint` (str): token mint which you want to retrieve the meta-data account info.
         """
         program_address = await self.get_program_address(str(mint))
         account_info_instance = await self.get_account_info(program_address)
         token_info = await unpack_metadata_account(account_info_instance)
-        return token_info['name'], token_info['symbol']
-    
-    async def get_mint_liquidity_pool_address(self, mint):
-        """
-        `get_liquidity_pool_address` retrieves the liquidity pool address for a given mint.
-
-        ##  Parameters
-        
-            `mint`: (str): public key representing a token mint address
-        """
-        return await self.get_program_address(mint,ProgramIdType.RAYDIUM_AUTHORITY.value)
-        
+        return token_info["name"], token_info["symbol"]
