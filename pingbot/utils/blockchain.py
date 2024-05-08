@@ -87,3 +87,9 @@ class PingSolanaClient:
         account_info_instance = await self.get_account_info(program_address)
         token_info = await unpack_metadata_account(account_info_instance)
         return token_info["name"], token_info["symbol"]
+    
+
+    #TODO: fetch transaction details function
+    #Check if buy or sold
+    #parse data and compile messagwe for channel
+    
