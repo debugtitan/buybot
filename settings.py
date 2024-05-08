@@ -24,7 +24,7 @@ DEBUG = env.bool("DJANGO_DEBUG_MODE",False)
 SUPER_ADMIN = env.int("TELEGRAM_ADMIN_ID",1185692914)
 
 INSTALLED_APPS = [
-    "resources.apps.PingBotResource"
+    "pingbot.resources"
 ]
 
 
