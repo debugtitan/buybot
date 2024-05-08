@@ -3,10 +3,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 django.setup()
 
 from django.conf import settings
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters,ConversationHandler
 from telegram.error import InvalidToken
 from pingbot.resources.models import PingBot
-from pingbot.actions import start_handler
+from pingbot.actions import (
+    start,
+    add_token
+)
 from pingbot.utils import logger
 
 
@@ -26,7 +29,8 @@ class SolanaPingBot:
 
     def _register_handlers(self):
         """ add all handlers (command handler, callbackquery handlers, message handlers)"""
-        self.ptb.add_handler(CommandHandler("start",start_handler))
+        self.ptb.add_handler(CommandHandler("start",start.start_handler))
+        self.ptb.add_handler(add_token.token_mint_conv_handler)
 
         
     
