@@ -8,9 +8,9 @@ from telegram.ext import (
 )
 from telegram.constants import ParseMode
 from pingbot.resources.models import PingBot
-from pingbot.utils.blockchain import PingSolanaClient
+from pingbot.actions import ping
 from pingbot.utils import logger
-ping = PingSolanaClient()
+
 MINT = range(1)
 
 
