@@ -7,10 +7,13 @@ from telegram.ext import (
     filters,
 )
 from telegram.constants import ParseMode
-
+from pingbot.utils.blockchain import PingSolanaClient
+from pingbot.utils import logger
+ping = PingSolanaClient()
 MINT = range(1)
 
 
+# Add New Token
 async def add_token_inline_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """add token inline query handler"""
     query = update.callback_query
@@ -22,6 +25,15 @@ async def add_token_inline_callback(update: Update, context: ContextTypes.DEFAUL
 
 async def get_mint_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """receives user's mint address"""
+    _contract_address = update.message.text
+    try:
+        token_info =  await ping.get_token_info(_contract_address)
+        print(token_info)
+    except Exception as err:
+        logger.error(err)
+
+
+
 
 
 async def cancel(update:Update, context:ContextTypes.DEFAULT_TYPE):

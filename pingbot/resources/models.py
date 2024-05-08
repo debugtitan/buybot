@@ -2,8 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from solo.models import SingletonModel
-from utils.base import BaseModelMixin
-from utils import enums
+from pingbot.utils.base import BaseModelMixin
 
 
 class PingBot(BaseModelMixin, SingletonModel):
