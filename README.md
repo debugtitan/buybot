@@ -52,7 +52,7 @@ python -m pingbot
 - [x] Implementation of Python Telegram Bot Wrapper
 - [x] Building PingBot Solana Client
 - [x] Fetch Token Info
-- [ ] Fetch Token Liquidty Pool Address
+- [x] Fetch Token Liquidty Pool Address
 - [ ] Fetch Token Liquidity Pool Events
 - [ ] Create Admin Panel
     - [ ] min buy alert
