@@ -7,6 +7,7 @@ from telegram.ext import (
     filters,
 )
 from telegram.constants import ParseMode
+from pingbot.resources.models import PingBot
 from pingbot.utils.blockchain import PingSolanaClient
 from pingbot.utils import logger
 ping = PingSolanaClient()
@@ -28,9 +29,11 @@ async def get_mint_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _contract_address = update.message.text
     try:
         token_info =  await ping.get_token_info(_contract_address)
+        token_pool_address = await ping.fetch_mint_pool_amm_id(_contract_address)
         print(token_info)
     except Exception as err:
         logger.error(err)
+        await update.message.reply_text("Kindly ensure that the contract is accurately filled out. Once confirmed, please initiate the procedure again by using the '/start' command.")
 
 
 
