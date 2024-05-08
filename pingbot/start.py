@@ -5,7 +5,7 @@ django.setup()
 from django.conf import settings
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram.error import InvalidToken
-from resources.models import PingBot
+from pingbot.resources.models import PingBot
 from pingbot.actions import start_handler
 from pingbot.utils import logger
 
