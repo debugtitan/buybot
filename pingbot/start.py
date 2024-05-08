@@ -7,7 +7,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 from telegram.error import InvalidToken
 from resources.models import PingBot
 from pingbot.actions import start_handler
-from utils import logger
+from pingbot.utils import logger
 
 
 class SolanaPingBot:
