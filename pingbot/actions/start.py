@@ -2,8 +2,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-from resources.models import PingBot
-from utils import logger,decorators,keyboards
+from pingbot.resources.models import PingBot
+from pingbot.utils import logger,decorators,keyboards
 
 @decorators.handler_decorator
 async def start_handler(update:Update, context:ContextTypes.DEFAULT_TYPE, *args, **kwargs):
