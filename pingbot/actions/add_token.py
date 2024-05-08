@@ -31,13 +31,16 @@ async def get_mint_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_instance = await  PingBot.objects.aget(pk=1)
         token_info =  await ping.get_token_info(_contract_address)
         token_pool_address = await ping.fetch_mint_pool_amm_id(_contract_address)
-        msg = f"Token has been saved\nToken: {token_info[0]} ({token_info[1]})\n\n💰 LP: <code>{token_pool_address}</code>"
+
+    
         db_instance.mint_name = token_info[0]
         db_instance.mint_symbol = token_info[1]
         db_instance.mint_pair = token_pool_address
         db_instance.token_mint = _contract_address
+
+        msg = f"Token has been saved\nToken: {token_info[0]} ({token_info[1]})\n\n💰 LP: <code>{token_pool_address}</code>"
         await db_instance.asave()
-        print(msg)
+        await update.message.reply_text(msg,parse_mode=ParseMode.HTML)
     except Exception as err:
         logger.error(err)
         await update.message.reply_text("Kindly ensure that the contract is accurately filled out. Once confirmed, please initiate the procedure again by using the '/start' command.")
