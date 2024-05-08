@@ -31,6 +31,8 @@ class PingBot(BaseModelMixin, SingletonModel):
         _("Telegram Group Id"), max_length=56, null=True, blank=True
     )
     send_alerts = models.BooleanField(default=False)
+    is_buy_alerts_enabled = models.BooleanField(default=True)
+    is_sell_alerts_enabled = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _("Ping Bot")
