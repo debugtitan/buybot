@@ -1,6 +1,7 @@
 from typing import List, Union
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import MemcmpOpts
+from solders.signature import Signature
 from solders.pubkey import Pubkey  # type: ignore
 from pingbot.utils.enums import ProgramIdType
 from pingbot.utils.metadata import (
@@ -88,7 +89,10 @@ class PingSolanaClient:
         token_info = await unpack_metadata_account(account_info_instance)
         return token_info["name"], token_info["symbol"]
     
-
+    async def get_transaction_info(self, signature):
+        tx_signature = Signature.from_string(str(signature))
+        tx_info  = await self.client.get_transaction(tx_signature)
+        print(tx_info)
     #TODO: fetch transaction details function
     #Check if buy or sold
     #parse data and compile messagwe for channel
