@@ -91,7 +91,7 @@ class PingSolanaClient:
     
     async def get_transaction_info(self, signature):
         tx_signature = Signature.from_string(str(signature))
-        tx_info  = await self.client.get_transaction(tx_signature)
+        tx_info  = await self.client.get_transaction(tx_signature,max_supported_transaction_version=0)
         print(tx_info)
     #TODO: fetch transaction details function
     #Check if buy or sold
