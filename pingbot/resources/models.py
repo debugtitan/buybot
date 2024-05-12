@@ -22,6 +22,11 @@ class PingBot(BaseModelMixin, SingletonModel):
     mint_symbol = models.CharField(
         _("Mint Symbol"), null=True, blank=True, max_length=65
     )
+    mint_supply = models.IntegerField(
+        _("Mint Supply"),
+        null=True,
+        blank=True,
+    )
     mint_pair = models.CharField(
         _("Token Mint Pair Address"), blank=True, null=True, max_length=65
     )

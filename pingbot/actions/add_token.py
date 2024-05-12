@@ -31,11 +31,13 @@ async def get_mint_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_instance = await  PingBot.objects.aget(pk=1)
         token_info =  await ping.get_token_info(_contract_address)
         token_pool_address = await ping.fetch_mint_pool_amm_id(_contract_address)
+        supply = await ping.get_token_supply(_contract_address)
 
         db_instance.mint_name = token_info[0]
         db_instance.mint_symbol = token_info[1]
         db_instance.mint_pair = token_pool_address
         db_instance.token_mint = _contract_address
+        db_instance.mint_supply = supply
         
 
         msg = f"Token has been saved\nToken: {token_info[0]} ({token_info[1]})\n\n💰 LP: <code>{token_pool_address}</code>"

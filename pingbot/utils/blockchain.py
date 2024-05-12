@@ -1,18 +1,43 @@
 from typing import List, Union
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import MemcmpOpts
+from solana.rpc.websocket_api import connect
 from solders.signature import Signature # type: ignore
 from solders.pubkey import Pubkey  # type: ignore
+from solders.rpc.config import RpcTransactionLogsFilterMentions # type: ignore
+from websockets.exceptions import ConnectionClosedError
 from pingbot.utils.enums import ProgramIdType
 from pingbot.utils.metadata import (
-    unpack_metadata_account,
-    AMM_INFO_LAYOUT_V4_1
+    calculate_asset_value,
+    format_number,
+    unpack_metadata_account
 )
-
+from pingbot.utils.enums import MarketType
+from pingbot.resources.models import PingBot
 __all__ = [
     "PingSolanaClient",
 ]
 
+async def listen_to_event(amm_pool):
+    """"""
+    async with connect("wss://api.mainnet-beta.solana.com") as websocket:
+        await websocket.logs_subscribe(
+                RpcTransactionLogsFilterMentions(Pubkey.from_string(str(amm_pool))),
+                commitment="finalized",
+            )
+        while True:
+            try:
+                    data = await websocket.recv()
+                    _result = data[0].result
+                    if hasattr(_result, "value"):
+                        result = _result.value
+                        log_signature, logs = result.signature, result.logs
+                        if any("transfer" in log for log in logs):
+                            client = PingSolanaClient()
+                            await client.get_transaction_info(log_signature)
+                        
+            except ConnectionClosedError as e:
+                await listen_to_event()
 
 class PingSolanaClient:
     BASE_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com"
@@ -76,6 +101,16 @@ class PingSolanaClient:
             filters=filters,
         )
         return resp.value[0].pubkey
+    
+    async def get_token_supply(self, mint):
+        """
+        retrieves mint circulating supply
+
+        ##  required
+                - `mint` (str): token mint
+        """
+        _supply = await self.client.get_token_supply(Pubkey.from_string(str(mint)))
+        return _supply.value.ui_amount
 
     async def get_token_info(self, mint):
         """
@@ -99,8 +134,51 @@ class PingSolanaClient:
         """
         tx_signature = Signature.from_string(str(signature))
         tx_info  = await self.client.get_transaction(tx_signature,"jsonParsed",max_supported_transaction_version=0)
-        log = tx_info.value.transaction.meta.pre_token_balances
-        print(log)
+        data = tx_info.value.transaction.meta
+        post_token_balance = [item for item in data.post_token_balances if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)]
+        pre_token_balance = [item for item in data.pre_token_balances if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)]
+        token_a_base = post_token_balance[0]#
+        token_a_quote = post_token_balance[1]
+        token_b_base = pre_token_balance[0]
+        token_b_quote = pre_token_balance[1]
+        ORDER = None
+        GOT = None
+        SPENT = None
+        PRICE = None
+        MSG = None
+        
+        liquidity = post_token_balance[1].ui_token_amount.ui_amount
 
-        return tx_info.value.transaction.meta.log_messages
+        if token_a_base.mint == token_b_base.mint:
+            ORDER = MarketType.SOLD.value if token_a_base.ui_token_amount.ui_amount > token_b_base.ui_token_amount.ui_amount else MarketType.BUY.value
+        if ORDER == MarketType.BUY.value:
+            SPENT = token_a_quote.ui_token_amount.ui_amount - token_b_quote.ui_token_amount.ui_amount
+            GOT = token_b_base.ui_token_amount.ui_amount - token_a_base.ui_token_amount.ui_amount
+            PRICE = post_token_balance[1].ui_token_amount.ui_amount / post_token_balance[0].ui_token_amount.ui_amount
+        else:
+            SPENT = token_b_quote.ui_token_amount.ui_amount - token_a_quote.ui_token_amount.ui_amount
+            GOT = token_a_base.ui_token_amount.ui_amount - token_b_base.ui_token_amount.ui_amount
+            PRICE = post_token_balance[1].ui_token_amount.ui_amount / post_token_balance[0].ui_token_amount.ui_amount
+
+        token_info = await PingBot.objects.aget(pk=1)
+        price_usd = calculate_asset_value(PRICE)
+        MCAP = token_info.mint_supply * price_usd
+        POOL= calculate_asset_value(liquidity)
+        spent_usd = calculate_asset_value(SPENT)
+        if ORDER == MarketType.BUY.value:
+            MSG = f"<b>{token_info.mint_name} Buy!</b>\n\n∴ Spent: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n↳ Got: {format_number(GOT)} {token_info.mint_symbol}\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
+                  f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
+                  f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
+        else:
+            MSG = f"<b>{token_info.mint_name} Sell!</b>\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
+                  f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
+                  f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
+
+        print(MSG)
+            
+
+
+
+
+        #return tx_info.value.transaction.meta.log_messages
     
