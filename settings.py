@@ -55,3 +55,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Blockchain
 PRIVATE_RPC_CLIENT = env.str("RPC_CLIENT")
+
+
+# Django Solo
+GET_SOLO_TEMPLATE_TAG_NAME = 'get_config'
