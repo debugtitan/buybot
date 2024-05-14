@@ -7,13 +7,13 @@ from solders.signature import Signature # type: ignore
 from solders.pubkey import Pubkey  # type: ignore
 from solders.rpc.config import RpcTransactionLogsFilterMentions # type: ignore
 from websockets.exceptions import ConnectionClosedError
-from pingbot.utils.enums import ProgramIdType
+from pingbot.utils import logger
+from pingbot.utils.enums import ProgramIdType, MarketType
 from pingbot.utils.metadata import (
     calculate_asset_value,
     format_number,
     unpack_metadata_account
 )
-from pingbot.utils.enums import MarketType
 import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 django.setup()
@@ -34,15 +34,15 @@ async def listen_to_event(amm_pool):
         while True:
             try:
                     data = await websocket.recv()
-                    print(data)
                     _result = data[0].result
                     if hasattr(_result, "value"):
                         result = _result.value
                         log_signature, logs = result.signature, result.logs
-                        if any("Program log: Instruction: Transfer" in log for log in logs):
+                        if any('Program log: Instruction: Route' in log for log in logs) and all("Error Message" not in _log for _log in logs):
                             client = PingSolanaClient(settings.PRIVATE_RPC_CLIENT)
                             await client.get_transaction_info(log_signature)
-                        
+                        else:
+                            logger.error(f"Possible Failed Swap: {log_signature}")         
             except ConnectionClosedError as e:
                 time.sleep(20)
                 await listen_to_event(amm_pool)
@@ -136,8 +136,16 @@ class PingSolanaClient:
         token_info = await unpack_metadata_account(account_info_instance)
         return token_info["name"], token_info["symbol"]
     
+    async def fetch_item(account_index, data):
+        for item in data:
+            if int(item.account_index) == int(account_index):
+                return item
+        
+    
     async def get_transaction_info(self, signature):
         from pingbot.resources.models import PingBot
+        print(signature)
+        token_info = await PingBot.objects.aget(pk=1)
         """
         `get_transaction_info` is returning the metadata of a transaction identified by the given signature.
 
@@ -147,12 +155,18 @@ class PingSolanaClient:
         tx_signature = Signature.from_string(str(signature))
         tx_info  = await self.client.get_transaction(tx_signature,"jsonParsed",max_supported_transaction_version=0)
         data = tx_info.value.transaction.meta
+
         post_token_balance = [item for item in data.post_token_balances if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)]
         pre_token_balance = [item for item in data.pre_token_balances if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)]
-        token_a_base = post_token_balance[0]#
-        token_a_quote = post_token_balance[1]
-        token_b_base = pre_token_balance[0]
-        token_b_quote = pre_token_balance[1]
+        token_base_a_index = [item for item in post_token_balance if str(item.mint) == str(token_info.token_mint)][0] # token index so we could fetch in pre_token balances
+        token_quote_a_index = [item for item in post_token_balance if str(item.mint) == str(ProgramIdType.WRAPPED_SOL.value)][-1]
+        token_base_b_index = [item for item in pre_token_balance if item.account_index == token_base_a_index.account_index ][0]
+        token_quote_b_index  = [item for item in pre_token_balance if item.account_index == token_quote_a_index.account_index][0]
+ 
+        token_a_base = token_base_a_index
+        token_a_quote = token_quote_a_index
+        token_b_base = token_base_b_index
+        token_b_quote = token_quote_b_index
         ORDER = None
         GOT = None
         SPENT = None
@@ -185,5 +199,7 @@ class PingSolanaClient:
             MSG = f"<b>{token_info.mint_name} Sell!</b>\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
                   f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
                   f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
+        
+        logger.info(MSG)
 
     
