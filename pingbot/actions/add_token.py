@@ -17,8 +17,10 @@ MINT = range(1)
 
 # Add New Token
 async def add_token_inline_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     """add token inline query handler"""
     query = update.callback_query
+    await query.answer()
     await query.edit_message_text(
         "Please send *(Token mint)* address for tracking", parse_mode=ParseMode.MARKDOWN
     )
@@ -28,6 +30,7 @@ async def add_token_inline_callback(update: Update, context: ContextTypes.DEFAUL
 async def get_mint_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """receives user's mint address"""
     _contract_address = update.message.text
+    msg_id = await update.message.reply_text("Searching mint...")
     try:
         db_instance = await  PingBot.objects.aget(pk=1)
         token_info =  await ping.get_token_info(_contract_address)
@@ -43,7 +46,7 @@ async def get_mint_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         msg = f"Token has been saved\nToken: {token_info[0]} ({token_info[1]})\n\n💰 LP: <code>{token_pool_address}</code>"
         await db_instance.asave()
-        await update.message.reply_text(msg,parse_mode=ParseMode.HTML)
+        await msg_id.edit_text(msg,parse_mode=ParseMode.HTML)
         if db_instance.token_mint and db_instance.mint_pair:
                 await blockchain.listen_to_event(token_pool_address)
     except Exception as err:
