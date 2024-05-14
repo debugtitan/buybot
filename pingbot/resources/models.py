@@ -35,9 +35,23 @@ class PingBot(BaseModelMixin, SingletonModel):
     alert_group_id = models.CharField(
         _("Telegram Group Id"), max_length=56, null=True, blank=True
     )
-    send_alerts = models.BooleanField(default=False)
+    paused = models.BooleanField(default=True)
     is_buy_alerts_enabled = models.BooleanField(default=True)
     is_sell_alerts_enabled = models.BooleanField(default=True)
+    min_alert_amount = models.PositiveIntegerField(
+        _("Minimum Alert Amount"),
+        help_text=_(
+            "Minimum threshold amount before bot send notication, default is $10"
+        ),
+        default=10,
+    )
+    emoji = models.CharField(
+        _("Emoji"),
+        help_text="emoji to display on alerts",
+        default="🔮",
+        max_length=1,
+    )
+    pid = models.IntegerField(_("Process Id"), default=0)
 
     class Meta:
         verbose_name = _("Ping Bot")
