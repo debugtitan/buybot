@@ -1,11 +1,11 @@
-import time,os
+import time, os
 from typing import List, Union
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import MemcmpOpts
 from solana.rpc.websocket_api import connect
-from solders.signature import Signature # type: ignore
+from solders.signature import Signature  # type: ignore
 from solders.pubkey import Pubkey  # type: ignore
-from solders.rpc.config import RpcTransactionLogsFilterMentions # type: ignore
+from solders.rpc.config import RpcTransactionLogsFilterMentions  # type: ignore
 from telegram.constants import ParseMode
 from websockets.exceptions import ConnectionClosedError
 from pingbot.utils import logger, ptb
@@ -14,9 +14,10 @@ from pingbot.utils.metadata import (
     calculate_asset_value,
     format_number,
     unpack_metadata_account,
-    increment_emoji
+    increment_emoji,
 )
 import django
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 django.setup()
 
@@ -25,34 +26,39 @@ __all__ = [
     "PingSolanaClient",
 ]
 
+
 async def listen_to_event(amm_pool):
     from django.conf import settings
+
     """"""
     async with connect("wss://api.mainnet-beta.solana.com") as websocket:
         await websocket.logs_subscribe(
-                RpcTransactionLogsFilterMentions(Pubkey.from_string(str(amm_pool))),
-                commitment="finalized",
-            )
+            RpcTransactionLogsFilterMentions(Pubkey.from_string(str(amm_pool))),
+            commitment="finalized",
+        )
         while True:
             try:
-                    data = await websocket.recv()
-                    _result = data[0].result
-                    if hasattr(_result, "value"):
-                        result = _result.value
-                        log_signature, logs = result.signature, result.logs
-                        if any('Program log: Instruction: Route' in log for log in logs) and all("Error Message" not in _log for _log in logs):
-                            client = PingSolanaClient(settings.PRIVATE_RPC_CLIENT)
-                            await client.get_transaction_info(log_signature)
-                        else:
-                            logger.error(f"Possible Failed Swap: {log_signature}")         
+                data = await websocket.recv()
+                _result = data[0].result
+                if hasattr(_result, "value"):
+                    result = _result.value
+                    log_signature, logs = result.signature, result.logs
+                    if any(
+                        "Program log: Instruction: Route" in log for log in logs
+                    ) and all("Error Message" not in _log for _log in logs):
+                        client = PingSolanaClient(settings.PRIVATE_RPC_CLIENT)
+                        await client.get_transaction_info(log_signature)
+                    else:
+                        logger.error(f"Possible Failed Swap: {log_signature}")
             except ConnectionClosedError as e:
                 time.sleep(20)
                 await listen_to_event(amm_pool)
             except KeyboardInterrupt:
                 exit()
 
+
 class PingSolanaClient:
-    
+
     BASE_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com"
 
     def __init__(self, endpoint=None) -> None:
@@ -114,7 +120,7 @@ class PingSolanaClient:
             filters=filters,
         )
         return resp.value[0].pubkey
-    
+
     async def get_token_supply(self, mint):
         """
         retrieves mint circulating supply
@@ -137,76 +143,148 @@ class PingSolanaClient:
         account_info_instance = await self.get_account_info(program_address)
         token_info = await unpack_metadata_account(account_info_instance)
         return token_info["name"], token_info["symbol"]
-    
+
     async def fetch_item(account_index, data):
         for item in data:
             if int(item.account_index) == int(account_index):
                 return item
-        
-    
+
     async def get_transaction_info(self, signature):
         from pingbot.resources.models import PingBot
-        print(signature)
-        token_info = await PingBot.objects.aget(pk=1)
-        """
-        `get_transaction_info` is returning the metadata of a transaction identified by the given signature.
 
-        ## Required 
-            - `signature` (str): transaction signature
-        """
-        tx_signature = Signature.from_string(str(signature))
-        tx_info  = await self.client.get_transaction(tx_signature,"jsonParsed",max_supported_transaction_version=0)
-        data = tx_info.value.transaction.meta
+        try:
+            print(signature)
+            token_info = await PingBot.objects.aget(pk=1)
+            """
+            `get_transaction_info` is returning the metadata of a transaction identified by the given signature.
 
-        post_token_balance = [item for item in data.post_token_balances if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)]
-        pre_token_balance = [item for item in data.pre_token_balances if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)]
-        token_base_a_index = [item for item in post_token_balance if str(item.mint) == str(token_info.token_mint)][0] # token index so we could fetch in pre_token balances
-        token_quote_a_index = [item for item in post_token_balance if str(item.mint) == str(ProgramIdType.WRAPPED_SOL.value)][-1]
-        token_base_b_index = [item for item in pre_token_balance if item.account_index == token_base_a_index.account_index ][0]
-        token_quote_b_index  = [item for item in pre_token_balance if item.account_index == token_quote_a_index.account_index][0]
- 
-        token_a_base = token_base_a_index
-        token_a_quote = token_quote_a_index
-        token_b_base = token_base_b_index
-        token_b_quote = token_quote_b_index
-        ORDER = None
-        GOT = None
-        SPENT = None
-        PRICE = None
-        MSG = None
-        
-        liquidity = post_token_balance[1].ui_token_amount.ui_amount
+            ## Required 
+                - `signature` (str): transaction signature
+            """
+            tx_signature = Signature.from_string(str(signature))
+            tx_info = await self.client.get_transaction(
+                tx_signature, "jsonParsed", max_supported_transaction_version=0
+            )
+            data = tx_info.value.transaction.meta
 
-        if token_a_base.mint == token_b_base.mint:
-            ORDER = MarketType.SOLD.value if token_a_base.ui_token_amount.ui_amount > token_b_base.ui_token_amount.ui_amount else MarketType.BUY.value
-        if ORDER == MarketType.BUY.value:
-            SPENT = token_a_quote.ui_token_amount.ui_amount - token_b_quote.ui_token_amount.ui_amount
-            GOT = token_b_base.ui_token_amount.ui_amount - token_a_base.ui_token_amount.ui_amount
-            PRICE = post_token_balance[1].ui_token_amount.ui_amount / post_token_balance[0].ui_token_amount.ui_amount
-        else:
-            SPENT = token_b_quote.ui_token_amount.ui_amount - token_a_quote.ui_token_amount.ui_amount
-            GOT = token_a_base.ui_token_amount.ui_amount - token_b_base.ui_token_amount.ui_amount
-            PRICE = post_token_balance[1].ui_token_amount.ui_amount / post_token_balance[0].ui_token_amount.ui_amount
+            post_token_balance = [
+                item
+                for item in data.post_token_balances
+                if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)
+            ]
+            pre_token_balance = [
+                item
+                for item in data.pre_token_balances
+                if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)
+            ]
+            token_base_a_index = [
+                item
+                for item in post_token_balance
+                if str(item.mint) == str(token_info.token_mint)
+            ][
+                0
+            ]  # token index so we could fetch in pre_token balances
+            token_quote_a_index = [
+                item
+                for item in post_token_balance
+                if str(item.mint) == str(ProgramIdType.WRAPPED_SOL.value)
+            ][-1]
+            token_base_b_index = [
+                item
+                for item in pre_token_balance
+                if item.account_index == token_base_a_index.account_index
+            ][0]
+            token_quote_b_index = [
+                item
+                for item in pre_token_balance
+                if item.account_index == token_quote_a_index.account_index
+            ][0]
 
-        token_info = await PingBot.objects.aget(pk=1)
-        price_usd = calculate_asset_value(PRICE)
-        MCAP = token_info.mint_supply * price_usd
-        POOL= calculate_asset_value(liquidity)
-        spent_usd = calculate_asset_value(SPENT)
-        emoji = increment_emoji(token_info.emoji,18)
-        if ORDER == MarketType.BUY.value:
-            MSG = f"<b>{token_info.mint_name} Buy!</b>\n\n{emoji}\n\n∴ Spent: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n↳ Got: {format_number(GOT)} {token_info.mint_symbol}\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
-                  f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
-                  f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
-        else:
-            MSG = f"<b>{token_info.mint_name} Sell!</b>\n{emoji}\n\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
-                  f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
-                  f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
-        
-        logger.info(f"\n{MSG}")
-        if token_info.is_sell_alerts_enabled and ORDER == MarketType.SOLD.value and float(price_usd) >= float(token_info.min_alert_amount):
-            ptb.bot.sendMessage(token_info.alert_group_id,MSG,parse_mode=ParseMode.HTML)
-        elif token_info.is_buy_alerts_enabled and ORDER == MarketType.BUY.value and float(price_usd) >= float(token_info.min_alert_amount):
-            ''' send to telegram'''
+            token_a_base = token_base_a_index
+            token_a_quote = token_quote_a_index
+            token_b_base = token_base_b_index
+            token_b_quote = token_quote_b_index
+            ORDER = None
+            GOT = None
+            SPENT = None
+            PRICE = None
+            MSG = None
 
-    
+            liquidity = post_token_balance[1].ui_token_amount.ui_amount
+
+            if token_a_base.mint == token_b_base.mint:
+                ORDER = (
+                    MarketType.SOLD.value
+                    if token_a_base.ui_token_amount.ui_amount
+                    > token_b_base.ui_token_amount.ui_amount
+                    else MarketType.BUY.value
+                )
+            if ORDER == MarketType.BUY.value:
+                SPENT = (
+                    token_a_quote.ui_token_amount.ui_amount
+                    - token_b_quote.ui_token_amount.ui_amount
+                )
+                GOT = (
+                    token_b_base.ui_token_amount.ui_amount
+                    - token_a_base.ui_token_amount.ui_amount
+                )
+                PRICE = (
+                    post_token_balance[1].ui_token_amount.ui_amount
+                    / post_token_balance[0].ui_token_amount.ui_amount
+                )
+            else:
+                SPENT = (
+                    token_b_quote.ui_token_amount.ui_amount
+                    - token_a_quote.ui_token_amount.ui_amount
+                )
+                GOT = (
+                    token_a_base.ui_token_amount.ui_amount
+                    - token_b_base.ui_token_amount.ui_amount
+                )
+                PRICE = (
+                    post_token_balance[1].ui_token_amount.ui_amount
+                    / post_token_balance[0].ui_token_amount.ui_amount
+                )
+
+            token_info = await PingBot.objects.aget(pk=1)
+            price_usd = calculate_asset_value(PRICE)
+            MCAP = token_info.mint_supply * price_usd
+            POOL = calculate_asset_value(liquidity)
+            spent_usd = calculate_asset_value(SPENT)
+            emoji = increment_emoji(token_info.emoji, 18)
+            if ORDER == MarketType.BUY.value:
+                MSG = (
+                    f"<b>{token_info.mint_name} Buy!</b>\n\n{emoji}\n\n∴ Spent: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n↳ Got: {format_number(GOT)} {token_info.mint_symbol}\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"
+                    f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n"
+                    f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
+                )
+            else:
+                MSG = (
+                    f"<b>{token_info.mint_name} Sell!</b>\n{emoji}\n\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"
+                    f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n"
+                    f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
+                )
+
+            logger.info(f"\n{MSG}")
+            logger.info(
+                f"\nbuy amount {spent_usd}, can send alert {float(spent_usd) >= float(token_info.min_alert_amount)}\n"
+            )
+            if (
+                token_info.is_sell_alerts_enabled
+                and ORDER == MarketType.SOLD.value
+                and float(spent_usd) >= float(token_info.min_alert_amount)
+            ):
+                await ptb.bot.sendMessage(
+                    token_info.alert_group_id, MSG, parse_mode=ParseMode.HTML
+                )
+            elif (
+                token_info.is_buy_alerts_enabled
+                and ORDER == MarketType.BUY.value
+                and float(spent_usd) >= float(token_info.min_alert_amount)
+            ):
+                await ptb.bot.sendMessage(
+                    token_info.alert_group_id, MSG, parse_mode=ParseMode.HTML
+                )
+
+        except Exception as e:
+            logger.warning(f"error: {e}")
