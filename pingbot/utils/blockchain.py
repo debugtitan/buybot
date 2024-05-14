@@ -1,3 +1,4 @@
+import time,os
 from typing import List, Union
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import MemcmpOpts
@@ -13,12 +14,17 @@ from pingbot.utils.metadata import (
     unpack_metadata_account
 )
 from pingbot.utils.enums import MarketType
-from pingbot.resources.models import PingBot
+import django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+django.setup()
+
+
 __all__ = [
     "PingSolanaClient",
 ]
 
 async def listen_to_event(amm_pool):
+    from django.conf import settings
     """"""
     async with connect("wss://api.mainnet-beta.solana.com") as websocket:
         await websocket.logs_subscribe(
@@ -28,18 +34,23 @@ async def listen_to_event(amm_pool):
         while True:
             try:
                     data = await websocket.recv()
+                    print(data)
                     _result = data[0].result
                     if hasattr(_result, "value"):
                         result = _result.value
                         log_signature, logs = result.signature, result.logs
-                        if any("transfer" in log for log in logs):
-                            client = PingSolanaClient()
+                        if any("Program log: Instruction: Transfer" in log for log in logs):
+                            client = PingSolanaClient(settings.PRIVATE_RPC_CLIENT)
                             await client.get_transaction_info(log_signature)
                         
             except ConnectionClosedError as e:
-                await listen_to_event()
+                time.sleep(20)
+                await listen_to_event(amm_pool)
+            except KeyboardInterrupt:
+                exit()
 
 class PingSolanaClient:
+    
     BASE_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com"
 
     def __init__(self, endpoint=None) -> None:
@@ -126,6 +137,7 @@ class PingSolanaClient:
         return token_info["name"], token_info["symbol"]
     
     async def get_transaction_info(self, signature):
+        from pingbot.resources.models import PingBot
         """
         `get_transaction_info` is returning the metadata of a transaction identified by the given signature.
 
@@ -174,11 +186,4 @@ class PingSolanaClient:
                   f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
                   f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
 
-        print(MSG)
-            
-
-
-
-
-        #return tx_info.value.transaction.meta.log_messages
     
