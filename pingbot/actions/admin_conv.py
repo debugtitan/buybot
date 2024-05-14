@@ -55,6 +55,7 @@ async def minimum_buy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ping.min_alert_amount = update.message.text
     await ping.asave()
     await update.message.reply_text("Minimum alert set ", reply_markup=back_button)
+    return ConversationHandler.END
 
 
 async def _group_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,6 +70,7 @@ async def group_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ping.alert_group_id = update.message.text
     await ping.asave()
     await update.message.reply_text("Group Id set", reply_markup=back_button)
+    return ConversationHandler.END
 
 
 async def _maintenace(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,6 +86,7 @@ async def _maintenace(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return MAINTENANCE
 
 
+
 async def maintenance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -93,6 +96,7 @@ async def maintenance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ping.asave()
     process.stop() if maintenance_enable else process.run()
     await query.edit_message_text("Maintenance set", reply_markup=back_button)
+    return ConversationHandler.END
 
 
 async def _buy_alert_enable(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -116,6 +120,7 @@ async def buy_alert_enable(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ping.is_buy_alerts_enabled = alert_enable
     await ping.asave()
     await query.edit_message_text("Buy alert  set", reply_markup=back_button)
+    return ConversationHandler.END
 
 
 async def _sell_alert_enable(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -140,6 +145,7 @@ async def sell_alert_enable(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ping.is_sell_alerts_enabled = alert_enable
     await ping.asave()
     await query.edit_message_text("Sell alerts set", reply_markup=back_button)
+    return ConversationHandler.END
 
 
 async def _emoji_handlers(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -154,6 +160,7 @@ async def emoji_handlers(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ping.emoji = update.message.text
     await ping.asave()
     await update.message.reply_text("Emoji set", reply_markup=back_button)
+    return ConversationHandler.END
 
 
 admin_conv_handler = ConversationHandler(

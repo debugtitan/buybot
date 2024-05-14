@@ -1,3 +1,4 @@
+import signal
 import time, os
 from typing import List, Union
 from solana.rpc.async_api import AsyncClient
@@ -8,6 +9,7 @@ from solders.pubkey import Pubkey  # type: ignore
 from solders.rpc.config import RpcTransactionLogsFilterMentions  # type: ignore
 from telegram.constants import ParseMode
 from websockets.exceptions import ConnectionClosedError
+from pingbot.resources.models import PingBot
 from pingbot.utils import logger, ptb
 from pingbot.utils.enums import ProgramIdType, MarketType
 from pingbot.utils.metadata import (
@@ -52,6 +54,8 @@ async def listen_to_event(amm_pool):
                         logger.error(f"Possible Failed Swap: {log_signature}")
             except ConnectionClosedError as e:
                 time.sleep(20)
+                bot_pid = await PingBot.objects.aget(pk=1)
+                os.kill(bot_pid.pid,signal.SIGTERM)
                 await listen_to_event(amm_pool)
             except KeyboardInterrupt:
                 exit()
@@ -251,18 +255,18 @@ class PingSolanaClient:
             MCAP = token_info.mint_supply * price_usd
             POOL = calculate_asset_value(liquidity)
             spent_usd = calculate_asset_value(SPENT)
-            emoji = increment_emoji(token_info.emoji, 18)
+            emoji = increment_emoji(token_info.emoji, 8)
             if ORDER == MarketType.BUY.value:
                 MSG = (
                     f"<b>{token_info.mint_name} Buy!</b>\n\n{emoji}\n\n∴ Spent: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n↳ Got: {format_number(GOT)} {token_info.mint_symbol}\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"
                     f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n"
-                    f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
+                    f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> ⋙ <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a> ⋙ ⋙ <a href='https://solscan.io/tx/{str(signature)}'>TXN</a>"
                 )
             else:
                 MSG = (
                     f"<b>{token_info.mint_name} Sell!</b>\n{emoji}\n\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"
                     f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n"
-                    f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
+                    f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> ⋙ <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a> ⋙ ⋙ <a href='https://solscan.io/tx/{str(signature)}'>TXN</a>"
                 )
 
             logger.info(f"\n{MSG}")
@@ -277,6 +281,7 @@ class PingSolanaClient:
                 await ptb.bot.sendMessage(
                     token_info.alert_group_id, MSG, parse_mode=ParseMode.HTML
                 )
+                return
             elif (
                 token_info.is_buy_alerts_enabled
                 and ORDER == MarketType.BUY.value
@@ -285,6 +290,8 @@ class PingSolanaClient:
                 await ptb.bot.sendMessage(
                     token_info.alert_group_id, MSG, parse_mode=ParseMode.HTML
                 )
+                return
+            return
 
         except Exception as e:
             logger.warning(f"error: {e}")
