@@ -23,6 +23,11 @@ def format_number(number, points:int=10):
         return f"{number:.{points}f}"
 
 
+def increment_emoji(emoji, increment=15):
+    try:
+        return emoji * increment
+    except TypeError:
+        return "💰💰💰💰💰"
 
         
 def calculate_asset_value(amount):
