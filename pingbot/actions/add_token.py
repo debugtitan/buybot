@@ -7,9 +7,10 @@ from telegram.ext import (
     filters,
 )
 from telegram.constants import ParseMode
+from multiprocessing import Process
 from pingbot.resources.models import PingBot
 from pingbot.actions import ping
-from pingbot.utils import logger
+from pingbot.utils import logger,blockchain
 
 MINT = range(1)
 
@@ -43,6 +44,8 @@ async def get_mint_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = f"Token has been saved\nToken: {token_info[0]} ({token_info[1]})\n\n💰 LP: <code>{token_pool_address}</code>"
         await db_instance.asave()
         await update.message.reply_text(msg,parse_mode=ParseMode.HTML)
+        if db_instance.token_mint and db_instance.mint_pair:
+                await blockchain.listen_to_event(token_pool_address)
     except Exception as err:
         logger.error(err)
         await update.message.reply_text("Kindly ensure that the contract is accurately filled out. Once confirmed, please initiate the procedure again by using the '/start' command.")
