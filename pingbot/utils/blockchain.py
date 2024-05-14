@@ -6,6 +6,7 @@ from solana.rpc.websocket_api import connect
 from solders.signature import Signature # type: ignore
 from solders.pubkey import Pubkey  # type: ignore
 from solders.rpc.config import RpcTransactionLogsFilterMentions # type: ignore
+from telegram.constants import ParseMode
 from websockets.exceptions import ConnectionClosedError
 from pingbot.utils import logger, ptb
 from pingbot.utils.enums import ProgramIdType, MarketType
@@ -204,7 +205,7 @@ class PingSolanaClient:
         
         logger.info(f"\n{MSG}")
         if token_info.is_sell_alerts_enabled and ORDER == MarketType.SOLD.value and float(price_usd) >= float(token_info.min_alert_amount):
-            ''' send to telegram'''
+            ptb.bot.sendMessage(token_info.alert_group_id,MSG,parse_mode=ParseMode.HTML)
         elif token_info.is_buy_alerts_enabled and ORDER == MarketType.BUY.value and float(price_usd) >= float(token_info.min_alert_amount):
             ''' send to telegram'''
 

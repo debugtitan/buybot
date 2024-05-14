@@ -55,15 +55,14 @@ python -m pingbot
 - [x] Fetch Token Liquidty Pool Address
 - [x] Fetch Token Liquidity Pool Events
 - [x] Create Admin Panel
-    - [ ] min buy alert
-    - [ ] min sell alert
-    - [ ] steps emoji setup
-    - [ ] pause alerts
-    - [ ] delete token from database
+    - [x] min buy alert
+    - [x] min sell alert
+    - [x] steps emoji setup
+    - [x] pause alerts
+    - [x] delete token from database
 - [x] Implement Decorator
     - [x] only bot super admin can make changes
-- [ ] Implement Language Translations (maybe)
-- [ ] Implement Ad's (not planning)
+
 
 
 ## feel free to open `pull request ` for new `contribution`
