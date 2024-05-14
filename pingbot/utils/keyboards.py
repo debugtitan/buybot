@@ -18,20 +18,10 @@ def create_keyboard_button(
     return menu
 
 
-START_PRIVATE_KEYBOARD_BUTTONS = InlineKeyboardMarkup(
-    create_keyboard_button(buttons=[
-        InlineKeyboardButton("ℹ️ Add me to your group", url=f'https://t.me/{settings.BOT_USERNAME}?startgroup=start'),
-        InlineKeyboardButton("Setup Token", callback_data="add_token#"),
-    ])
+TOKEN_KEYBOARD_BUTTONS = InlineKeyboardMarkup(
+    [
+        [InlineKeyboardButton("Add New Token",callback_data="add_token#")],
+        [InlineKeyboardButton("Change Token Settings", callback_data="token_settings#")]
+    ]
 )
 
-def _get_redirect_user_to_private_chat(group_id):
-    """ apppends the telegram id to inline button """
-    #Purpose is to run some background checks on the user using this command
-    print(group_id)
-    return InlineKeyboardMarkup(
-    create_keyboard_button(buttons=[
-        InlineKeyboardButton("ℹ️ Click me!", url = f'https://t.me/{settings.BOT_USERNAME}?start={group_id}_public-group-admin-settings'),
-        
-    ])
-)
