@@ -1,5 +1,6 @@
 import logging
-
+from telegram.ext import Application
+from django.conf import settings
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
@@ -8,3 +9,6 @@ logging.basicConfig(
 # If you don't do this, others can seeyour bot token if on public server
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
+
+
+ptb = Application.builder().token(settings.TOKEN).build()
