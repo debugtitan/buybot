@@ -1,8 +1,11 @@
 import time
+import threading
 from functools import wraps
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ChatAction
+
+from pingbot.resources.models import PingBot
 
 def send_action(action):
     """Sends `action` while processing func command."""
@@ -32,7 +35,14 @@ def check_chat_type(func):
 
     return command_func
 
+def check_owner(func):
+    @wraps(func)
+    async def command_func(update:Update, context, *args, **kwargs):
+        ping = await PingBot.objects.aget(pk=1)
+        if update.effective_chat.type == "private" and int(update.effective_message.chat_id) == int(ping.owner) :
+            return await func(update, context)
 
+    return command_func
 
 def handler_decorator(func):
     @wraps(func)
@@ -43,6 +53,13 @@ def handler_decorator(func):
 
     return wrapper
 
+def threaded(fn):
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=fn, args=args, kwargs=kwargs)
+        thread.start()
+        return thread
+
+    return wrapper
 
 # Plans to accept for multiple token mints and groups
 class MWT(object):
