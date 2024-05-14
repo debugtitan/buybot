@@ -6,7 +6,7 @@ from pycoingecko import CoinGeckoAPI
 
 cg = CoinGeckoAPI()
 
-def format_number(number,points:int=10):
+def format_number(number, points:int=10):
     if abs(number) >= 1e15:
         return f"{number / 1e15:.2f}Q"
     elif abs(number) >= 1e12:
@@ -17,7 +17,9 @@ def format_number(number,points:int=10):
         return f"{number / 1e6:.2f}M"
     elif abs(number) >= 1e3:
         return f"{number / 1e3:.2f}K"
-    else:
+    elif number < 1000:
+        return f"{number:.2f}"
+    elif number < 1:
         return f"{number:.{points}f}"
 
 
