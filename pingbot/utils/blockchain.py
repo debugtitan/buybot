@@ -7,12 +7,13 @@ from solders.signature import Signature # type: ignore
 from solders.pubkey import Pubkey  # type: ignore
 from solders.rpc.config import RpcTransactionLogsFilterMentions # type: ignore
 from websockets.exceptions import ConnectionClosedError
-from pingbot.utils import logger
+from pingbot.utils import logger, ptb
 from pingbot.utils.enums import ProgramIdType, MarketType
 from pingbot.utils.metadata import (
     calculate_asset_value,
     format_number,
-    unpack_metadata_account
+    unpack_metadata_account,
+    increment_emoji
 )
 import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
@@ -191,15 +192,20 @@ class PingSolanaClient:
         MCAP = token_info.mint_supply * price_usd
         POOL= calculate_asset_value(liquidity)
         spent_usd = calculate_asset_value(SPENT)
+        emoji = increment_emoji(token_info.emoji,18)
         if ORDER == MarketType.BUY.value:
-            MSG = f"<b>{token_info.mint_name} Buy!</b>\n\n∴ Spent: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n↳ Got: {format_number(GOT)} {token_info.mint_symbol}\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
+            MSG = f"<b>{token_info.mint_name} Buy!</b>\n\n{emoji}\n\n∴ Spent: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n↳ Got: {format_number(GOT)} {token_info.mint_symbol}\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
                   f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
                   f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
         else:
-            MSG = f"<b>{token_info.mint_name} Sell!</b>\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
+            MSG = f"<b>{token_info.mint_name} Sell!</b>\n{emoji}\n\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd,4)})\n\nPrice: {format_number(PRICE)} WSOL (${format_number(price_usd)})\n"\
                   f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity,6)} WSOL (${format_number(POOL,6)})\n\n" \
                   f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a>"
         
-        logger.info(MSG)
+        logger.info(f"\n{MSG}")
+        if token_info.is_sell_alerts_enabled and ORDER == MarketType.SOLD.value and float(price_usd) >= float(token_info.min_alert_amount):
+            ''' send to telegram'''
+        elif token_info.is_buy_alerts_enabled and ORDER == MarketType.BUY.value and float(price_usd) >= float(token_info.min_alert_amount):
+            ''' send to telegram'''
 
     
