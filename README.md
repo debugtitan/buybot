@@ -53,17 +53,16 @@ python -m pingbot
 - [x] Building PingBot Solana Client
 - [x] Fetch Token Info
 - [x] Fetch Token Liquidty Pool Address
-- [ ] Fetch Token Liquidity Pool Events
-- [ ] Create Admin Panel
+- [x] Fetch Token Liquidity Pool Events
+- [x] Create Admin Panel
     - [ ] min buy alert
     - [ ] min sell alert
     - [ ] steps emoji setup
-    - [ ] gif for buy and sell notification
     - [ ] pause alerts
     - [ ] delete token from database
-- [ ] Implement Decorator
-        - only bot super admin can make changes
-- [ ] Implement Language Translations
+- [x] Implement Decorator
+    - [x] only bot super admin can make changes
+- [ ] Implement Language Translations (maybe)
 - [ ] Implement Ad's (not planning)
 
 
