@@ -9,7 +9,6 @@ from solders.pubkey import Pubkey  # type: ignore
 from solders.rpc.config import RpcTransactionLogsFilterMentions  # type: ignore
 from telegram.constants import ParseMode
 from websockets.exceptions import ConnectionClosedError
-import pingbot
 from pingbot.resources.models import PingBot
 from pingbot.utils import logger, ptb
 from pingbot.utils.enums import ProgramIdType, MarketType
@@ -37,7 +36,7 @@ async def listen_to_event(amm_pool):
     async with connect("wss://api.mainnet-beta.solana.com") as websocket:
         await websocket.logs_subscribe(
             RpcTransactionLogsFilterMentions(Pubkey.from_string(str(amm_pool))),
-            commitment="confirmed",
+            commitment="finalized",
         )
         processed_signatures = set()
         while True:
@@ -51,6 +50,7 @@ async def listen_to_event(amm_pool):
                         if any(
                             "Program log: Instruction: Route" in log for log in logs
                         ) and all("Error Message" not in _log for _log in logs):
+                            print(log_signature)
                             client = PingSolanaClient(settings.PRIVATE_RPC_CLIENT)
                             await client.get_transaction_info(log_signature)
                         else:
@@ -183,6 +183,7 @@ class PingSolanaClient:
                 for item in data.pre_token_balances
                 if str(item.owner) == str(ProgramIdType.RAYDIUM_AUTHORITY.value)
             ]
+
             base_token_account_index = None
             quote_token_account_index = None
 
@@ -219,6 +220,7 @@ class PingSolanaClient:
                 token_a_quote = post_token_b[0]
                 token_b_base = pre_token_a[0]
                 token_b_quote = pre_token_b[0]
+
                 ORDER = None
                 GOT = None
                 SPENT = None
