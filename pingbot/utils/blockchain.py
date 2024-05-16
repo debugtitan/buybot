@@ -280,13 +280,13 @@ class PingSolanaClient:
                     MSG = (
                         f"<b>{token_info.mint_name} Buy!</b>\n\n{emoji}\n\n∴ Spent: {format_number(SPENT)} SOL (${format_number(spent_usd)})\n↳ Got: {format_number(GOT)} {token_info.mint_symbol}\n\nPrice: {PRICE} WSOL (${format_number(price_usd)})\n"
                         f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity)} WSOL (${format_number(POOL)})\n\n"
-                        f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> ⋙ <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a> ⋙ ⋙ <a href='https://solscan.io/tx/{str(signature)}'>TXN</a>"
+                        f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> ⋙ <a href='https://birdeye.so/token/{token_info.token_mint}/{token_info.mint_pair}'>Chart</a> ⋙ ⋙ <a href='https://solscan.io/tx/{str(signature)}'>TXN</a>"
                     )
                 else:
                     MSG = (
                         f"<b>{token_info.mint_name} Sell!</b>\n{emoji}\n\n⌞Sold: {format_number(GOT)} {token_info.mint_symbol}\n∴ For: {format_number(SPENT,8)} SOL (${format_number(spent_usd)})\n\nPrice: {PRICE} WSOL (${format_number(price_usd)})\n"
                         f"💰 MarketCap: ${format_number(MCAP)}\n💧Liquidity: {format_number(liquidity)} WSOL (${format_number(POOL)})\n\n"
-                        f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> ⋙ <a href='https://birdeye.so/token/{token_info.token_mint}'>Chart</a> ⋙ ⋙ <a href='https://solscan.io/tx/{str(signature)}'>TXN</a>"
+                        f"<a href='https://raydium.io/swap/?inputCurrency=sol&outputCurrency={token_info.token_mint}'>Buy</a> ⋙ <a href='https://birdeye.so/token/{token_info.token_mint}/{token_info.mint_pair}'>Chart</a> ⋙ ⋙ <a href='https://solscan.io/tx/{str(signature)}'>TXN</a>"
                     )
 
                 logger.info(f"\n{MSG}")
