@@ -17,7 +17,7 @@ def format_number(number):
         return f"{number / 1e6:.2f}M"
     elif abs(number) >= 1e3:
         return f"{number / 1e3:.2f}K"
-    elif number < 1000:
+    elif number < 1000 and number >=1:
         return f"{number:.2f}"
     elif number < 1:
         return f"{number:.6f}"
