@@ -38,12 +38,14 @@ class PingBot(BaseModelMixin, SingletonModel):
     paused = models.BooleanField(default=True)
     is_buy_alerts_enabled = models.BooleanField(default=True)
     is_sell_alerts_enabled = models.BooleanField(default=True)
-    min_alert_amount = models.PositiveIntegerField(
+    min_alert_amount = models.DecimalField(
         _("Minimum Alert Amount"),
         help_text=_(
             "Minimum threshold amount before bot send notication, default is $10"
         ),
-        default=10,
+        max_digits=15,
+        decimal_places= 4,
+        default=10.0,
     )
     emoji = models.CharField(
         _("Emoji"),
