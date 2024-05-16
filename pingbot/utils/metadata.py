@@ -6,7 +6,7 @@ from pycoingecko import CoinGeckoAPI
 
 cg = CoinGeckoAPI()
 
-def format_number(number, points:int=10):
+def format_number(number):
     if abs(number) >= 1e15:
         return f"{number / 1e15:.2f}Q"
     elif abs(number) >= 1e12:
@@ -20,7 +20,7 @@ def format_number(number, points:int=10):
     elif number < 1000:
         return f"{number:.2f}"
     elif number < 1:
-        return f"{number:.{points}f}"
+        return f"{number:.6f}"
 
 
 def increment_emoji(emoji, increment=15):
@@ -32,7 +32,7 @@ def increment_emoji(emoji, increment=15):
         
 def calculate_asset_value(amount):
     price_per_sol = cg.get_price("solana", "usd")["solana"]["usd"]
-    return amount * price_per_sol
+    return float(amount) * float(price_per_sol)
 
 def truncate_address(address):
     if len(address) <= 14:
